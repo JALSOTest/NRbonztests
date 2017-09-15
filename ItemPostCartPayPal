@@ -1,0 +1,112 @@
+/**
+ * Feel free to explore, or check out the full documentation
+ * https://docs.newrelic.com/docs/synthetics/new-relic-synthetics/scripting-monitors/writing-scripted-browsers
+ * for details.
+ */
+
+//var assert = require('assert');
+//Switching to Chai style asserts rather than Node.js native asserts - way more flexible.
+var assert = require('chai').assert;
+
+//Blacklisting due to something weird with ad loads causing a hang in Synthetics, leading to false positive.
+$browser.addHostnamesToBlacklist(["*.cdnvideofiles.com", "cdn.cdnvideofiles.com"]);
+
+$browser.get('http://www.bonanza.com/listings/Sup-Foo-/155155069').then(function(){
+  //find 'Add item to cart' button.
+  console.log('initial page loaded');
+  return $browser.findElement($driver.By.css('a#add_to_cart')).then(function(element){
+    //check button text
+    return element.getText().then(function(text){
+      assert.equal('Add to cart', text, 'Didn\'t find button');
+    });
+  })
+})
+
+//Add item to cart
+.then(function(){
+  return $browser.findElement($driver.By.css('a#add_to_cart')).click();
+})
+//Find the item added text for confirmation
+.then(function(){
+  //return $browser.findElement($driver.By.css('div#cart_complete_confirmation_message')).then(function(element){
+  console.log('added to cart');
+  return $browser.findElement($driver.By.className('added_to_cart')).then(function(element){
+    return element.getText().then(function(text){
+      // console.log('we made it');
+      assert.equal('Added to your cart:', text, 'Not on cart page');
+    });
+  })
+})
+
+//Clicking "Go To Cart" Button.
+.then(function(){
+  return $browser.findElement($driver.By.className('go_to_cart_button')).click();
+})
+
+//Entering Zip Code for shipping calcs
+.then(function(){
+  console.log('made it to cart, about to enter zip')
+  return $browser.waitForAndFindElement($driver.By.id('checkout_user_zip_code')).then(function(element){
+    return element.sendKeys('98004');
+  })
+})
+
+.then(function(){
+    //Clicking the Calculate Shipping button.
+    //leaving commented out, non-working tries at Element selection for posterity. Turns out selecting the CSS in Chrome Dev Tools, right clicking and selecting Copy CSS selector path is handy.
+      return $browser.findElement($driver.By.css('#collect_zip > div > form > div.submit > input')).click();
+    //return $browser.findElement($driver.By.partialLinkText('Calculate')).click();
+    //return $browser.findElement($driver.by.xpath('*[@id="collect_zip"]/div/form/div[4]/input')).click;
+})
+
+.then(function(){
+  console.log('about to make it to paypal');
+  $browser.sleep(8000);
+  return $browser.findElement($driver.By.name('paypal_express')).click(); 
+})
+
+.then(function(){
+  console.log('Waiting to be on Paypal?');
+  $browser.sleep(5000);
+  return $browser.getCurrentUrl().then(function(CurURL){
+    assert.include(CurURL, 'checkoutnow'||'xo_node_fallback=true', 'Wrong URL')
+  })
+
+
+})
+
+/* Legacy code broken from A/B test on PayPal's end. The above block was a workaround, testing the URL being correct rather than a page element. - JA
+.then(function(){
+  return $browser.waitForAndFindElement($driver.By.css('#singlePagePaymentForm')).then(function(){
+     return $browser.getTitle().then(function(title) {
+      //Ensure that the title matches `Search | New Relic Documentation`.
+      assert.equal('PayPal Checkout - Create a PayPal account!', title, 'Not on PayPal');
+    });
+  });
+})
+
+*/
+.then(function(){
+
+  return console.log('the end for now')
+});
+      
+    
+
+  
+  /*Example code left in for reference.
+  // Check the H1 title matches "Example Domain"
+  return $browser.findElement($driver.By.css('h1')).then(function(element){
+    return element.getText().then(function(text){
+      assert.equal('Example Domain', text, 'Page H1 title did not match');
+    });
+  });*/
+
+/*}).then(function(){
+  // Check that the external link matches "http://www.iana.org/domains/example"
+  return $browser.findElement($driver.By.css('div > p > a')).then(function(element){
+    return element.getAttribute('href').then(function(link){
+      assert.equal('http://www.iana.org/domains/example', link, 'More information link did not match');
+    });
+  });
+});*/
