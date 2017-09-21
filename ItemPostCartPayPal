@@ -4,6 +4,8 @@
  * for details.
  */
 
+//Adding a worthless comment for SO PR purposes.
+
 //var assert = require('assert');
 //Switching to Chai style asserts rather than Node.js native asserts - way more flexible.
 var assert = require('chai').assert;
